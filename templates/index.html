@@ -81,7 +81,7 @@
             </select>
         </div>
         <div class="zone-sensors" id="sensors_${id}"></div>
-        <div><b>Last Watered:</b> ${zone.last_watered || 'Never'}</div>
+        <div id="last_watered_${id}"><b>Last Watered:</b> ${zone.last_watered ? formatLastWatered(zone.last_watered) : 'Never'}</div>
     `;
 
     document.getElementById('zones').appendChild(zoneDiv);
@@ -255,6 +255,31 @@
         });
     }
 
+    function updateZoneLastWatered(liveZones) {
+    liveZones.forEach((zone, index) => {
+        const lastWateredDiv = document.getElementById(`last_watered_${index + 1}`);
+        if (lastWateredDiv) {
+            if (zone.last_watered) {
+                const formatted = formatLastWatered(zone.last_watered);
+                lastWateredDiv.innerHTML = `<b>Last Watered:</b> ${formatted}`;
+            } else {
+                lastWateredDiv.innerHTML = `<b>Last Watered:</b> Never`;
+            }
+        }
+    });
+    }
+
+    function formatLastWatered(rawDate) {
+        const date = new Date(rawDate);
+        if (isNaN(date.getTime())) {
+            return "Invalid date";
+        }
+
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes} on ${date.getMonth()+1}/${date.getDate()}/${date.getFullYear()}`;
+    }
+
     function addScheduledTime(id) {
     const container = document.getElementById(`scheduled_times_container_${id}`);
     const timeInput = document.createElement('input');
@@ -271,6 +296,7 @@
 
     socket.on('sensor_update', function(data) {
         updateSensorStatus(data);
+        updateZoneLastWatered(data.zones);
     });
     </script>
 </body>

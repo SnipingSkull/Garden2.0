@@ -160,6 +160,7 @@ def sensor_loop():
             # Emit updates to frontend if needed
             socketio.emit('sensor_update', {
                 'sensors': sensor_readings,
+                'zones': zones,
                 'temp_raw': temp_reading
             })
 
