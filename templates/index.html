@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden Controller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0fff0;
+            padding: 20px;
+        }
+        .zone-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .zone-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .zone-sensors {
+            margin-top: 10px;
+        }
+        .sensor-status {
+            margin-left: 10px;
+            color: green;
+        }
+        .button {
+            margin: 5px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Garden Controller Dashboard</h1>
+
+    <div id="zones"></div>
+
+    <button class="button" onclick="saveZones()">Save Zones</button>
+    <button class="button" onclick="addZone()">Add New Zone</button>
+
+    <script>
+    const socket = io();
+    let zonesData = {{ zones_data | tojson }};
+    let zoneCount = 0;
+
+    function createZoneElement(zone, id) {
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'zone-container';
+    zoneDiv.id = `zone_${id}`;
+
+    zoneDiv.innerHTML = `
+        <div class="zone-header">
+            <div class="zone-title">${zone.name || 'New Zone'}</div>
+            <div>
+                <button class="button" onclick="manualStart(${zone.valve})">Start</button>
+                <button class="button" onclick="manualStop(${zone.valve})">Stop</button>
+            </div>
+        </div>
+        <div><b>Valve:</b> ${zone.valve}</div>
+        <div><b>Sensors:</b> ${zone.sensors.join(', ')}</div>
+        <div>
+            <b>Active:</b> 
+            <select onchange="toggleZoneActive(${id})" id="active_toggle_${id}">
+                <option value="true" ${zone.active ? 'selected' : ''}>Yes</option>
+                <option value="false" ${!zone.active ? 'selected' : ''}>No</option>
+            </select>
+        </div>
+        <div class="zone-sensors" id="sensors_${id}"></div>
+        <div><b>Last Watered:</b> ${zone.last_watered || 'Never'}</div>
+    `;
+
+    document.getElementById('zones').appendChild(zoneDiv);
+    }
+
+    function toggleZoneActive(id) {
+    const activeValue = document.getElementById(`active_toggle_${id}`).value;
+    zonesData[id - 1].active = activeValue === "true";
+    console.log(`Zone ${zonesData[id-1].name} active set to ${zonesData[id-1].active}`);
+    }
+
+    function updateSensorStatus(sensorData) {
+        zonesData.forEach((zone, index) => {
+            let html = '';
+            zone.sensors.forEach(sensorId => {
+                if (sensorData.sensors[sensorId]) {
+                    const status = sensorData.sensors[sensorId].disconnected ? 'Disconnected' : `${sensorData.sensors[sensorId].moisture.toFixed(1)}%`;
+                    html += `<div>Sensor ${sensorId}: <span class="sensor-status">${status}</span></div>`;
+                }
+            });
+            const sensorDiv = document.getElementById(`sensors_${index + 1}`);
+            if (sensorDiv) sensorDiv.innerHTML = html;
+        });
+    }
+
+    function addZone() {
+    zoneCount++;
+
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'zone-container';
+    zoneDiv.id = `zone_${zoneCount}`;
+
+    zoneDiv.innerHTML = `
+        <div class="zone-form">
+            <label>Zone Name:</label><br>
+            <input type="text" id="zone_name_${zoneCount}" placeholder="e.g., Front Garden"><br><br>
+
+            <label>Select Valve:</label><br>
+            <select id="valve_${zoneCount}">
+                <option value="1">Valve 1</option>
+                <option value="2">Valve 2</option>
+                <option value="3">Valve 3</option>
+            </select><br><br>
+
+            <label>Assign Sensors:</label><br>
+            <input type="checkbox" id="sensor1_${zoneCount}" value="1"> Sensor 1<br>
+            <input type="checkbox" id="sensor2_${zoneCount}" value="2"> Sensor 2<br>
+            <input type="checkbox" id="sensor3_${zoneCount}" value="3"> Sensor 3<br><br>
+
+            <label>Active:</label><br>
+            <select id="active_${zoneCount}">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select><br><br>
+
+            <label><input type="checkbox" id="sensor_based_enabled_${zoneCount}"> Enable Sensor-Based Watering</label><br>
+            <label>Sensor-Based Threshold (%):</label><br>
+            <input type="number" id="threshold_${zoneCount}" value="30"><br><br>
+
+            <label><input type="checkbox" id="timer_based_enabled_${zoneCount}"> Enable Timer-Based Watering</label><br>
+            <label>Timer Interval (Hours):</label><br>
+            <input type="number" id="timer_${zoneCount}" value="6"><br><br>
+
+            <label><input type="checkbox" id="scheduled_enabled_${zoneCount}"> Enable Scheduled Watering</label><br><br>
+            <label>Scheduled Times (comma separated HH:MM):</label><br>
+            <input type="text" id="schedule_${zoneCount}" placeholder="06:00,18:00"><br><br>
+
+            <button class="button" onclick="saveNewZone(${zoneCount})">Done</button>
+            <button class="button" onclick="cancelZone(${zoneCount})">Cancel</button>
+        </div>
+    `;
+
+    document.getElementById('zones').appendChild(zoneDiv);
+    }
+
+    function saveNewZone(id) {
+    const name = document.getElementById(`zone_name_${id}`).value;
+    const valve = parseInt(document.getElementById(`valve_${id}`).value);
+    const active = document.getElementById(`active_${id}`).value === "true";
+    const threshold = parseFloat(document.getElementById(`threshold_${id}`).value);
+    const timer = parseFloat(document.getElementById(`timer_${id}`).value);
+    const scheduleStr = document.getElementById(`schedule_${id}`).value;
+    const scheduleTimes = scheduleStr.split(',').map(s => s.trim());
+
+    const sensors = [];
+    if (document.getElementById(`sensor1_${id}`).checked) sensors.push(1);
+    if (document.getElementById(`sensor2_${id}`).checked) sensors.push(2);
+    if (document.getElementById(`sensor3_${id}`).checked) sensors.push(3);
+
+    const sensor_based_enabled = document.getElementById(`sensor_based_enabled_${id}`).checked;
+    const timer_based_enabled = document.getElementById(`timer_based_enabled_${id}`).checked;
+    const scheduled_enabled = document.getElementById(`scheduled_enabled_${id}`).checked;
+
+
+    const newZone = {
+    name: name,
+    valve: valve,
+    sensors: sensors,
+    active: active,
+    watering_modes: {
+        sensor_based: { 
+            enabled: sensor_based_enabled, 
+            threshold_percentage: threshold 
+        },
+        timer_based: { 
+            enabled: timer_based_enabled, 
+            interval_hours: timer 
+        },
+        scheduled: { 
+            enabled: scheduled_enabled, 
+            times: scheduleTimes 
+        }
+    },
+    last_watered: null
+    };
+
+    zonesData.push(newZone);
+    console.log("New zone added:", newZone);
+
+    // Clear and re-render zones
+    document.getElementById('zones').innerHTML = '';
+    zonesData.forEach((zone, index) => createZoneElement(zone, index + 1));
+    }
+
+    function saveZones() {
+        fetch('/save_zones', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(zonesData)
+        })
+        .then(response => response.text())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error saving zones:', error));
+    }
+
+    function manualStart(valve) {
+        fetch('/manual_start_zone', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `valve=${valve}`
+        });
+    }
+
+    function manualStop(valve) {
+        fetch('/manual_stop_zone', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `valve=${valve}`
+        });
+    }
+
+    window.onload = function() {
+        zonesData.forEach((zone, index) => createZoneElement(zone, index + 1));
+        zoneCount = zonesData.length;
+    }
+
+    socket.on('sensor_update', function(data) {
+        updateSensorStatus(data);
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+[
+    {
+        "active": true,
+        "last_watered": "2025-04-18T15:00:43.638390",
+        "name": "Front Garden",
+        "sensors": [
+            1,
+            2
+        ],
+        "valve": 1,
+        "watering_modes": {
+            "scheduled": {
+                "enabled": true,
+                "times": [
+                    "06:00",
+                    "18:00"
+                ]
+            },
+            "sensor_based": {
+                "enabled": true,
+                "threshold_percentage": 30
+            },
+            "timer_based": {
+                "enabled": false,
+                "interval_hours": 6
+            }
+        }
+    },
+    {
+        "name": "Back Garden",
+        "valve": 1,
+        "sensors": [
+            1
+        ],
+        "active": true,
+        "watering_modes": {
+            "sensor_based": {
+                "enabled": true,
+                "threshold_percentage": 30
+            },
+            "timer_based": {
+                "enabled": true,
+                "interval_hours": null
+            },
+            "scheduled": {
+                "enabled": true,
+                "times": [
+                    ""
+                ]
+            }
+        },
+        "last_watered": "2025-04-18T15:00:43.638390"
+    }
+]
