@@ -25,30 +25,5 @@
                 "interval_hours": 6
             }
         }
-    },
-    {
-        "name": "Back Garden",
-        "valve": 1,
-        "sensors": [
-            1
-        ],
-        "active": true,
-        "watering_modes": {
-            "sensor_based": {
-                "enabled": true,
-                "threshold_percentage": 30
-            },
-            "timer_based": {
-                "enabled": true,
-                "interval_hours": null
-            },
-            "scheduled": {
-                "enabled": true,
-                "times": [
-                    ""
-                ]
-            }
-        },
-        "last_watered": "2025-04-18T15:00:43.638390"
     }
 ]

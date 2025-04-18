@@ -146,8 +146,10 @@
             <input type="number" id="timer_${zoneCount}" value="6"><br><br>
 
             <label><input type="checkbox" id="scheduled_enabled_${zoneCount}"> Enable Scheduled Watering</label><br><br>
-            <label>Scheduled Times (comma separated HH:MM):</label><br>
-            <input type="text" id="schedule_${zoneCount}" placeholder="06:00,18:00"><br><br>
+            <div id="scheduled_times_container_${zoneCount}">
+            <label>Scheduled Watering Times:</label><br>
+            </div>
+            <button type="button" class="button" onclick="addScheduledTime(${zoneCount})">Add Time</button><br><br>
 
             <button class="button" onclick="saveNewZone(${zoneCount})">Done</button>
             <button class="button" onclick="cancelZone(${zoneCount})">Cancel</button>
@@ -163,8 +165,14 @@
     const active = document.getElementById(`active_${id}`).value === "true";
     const threshold = parseFloat(document.getElementById(`threshold_${id}`).value);
     const timer = parseFloat(document.getElementById(`timer_${id}`).value);
-    const scheduleStr = document.getElementById(`schedule_${id}`).value;
-    const scheduleTimes = scheduleStr.split(',').map(s => s.trim());
+    const scheduleInputs = document.querySelectorAll(`#scheduled_times_container_${id} input[type='time']`);
+    const scheduleTimes = [];
+    scheduleInputs.forEach(input => {
+        if (input.value) {
+            scheduleTimes.push(input.value);
+        }
+    });
+
 
     const sensors = [];
     if (document.getElementById(`sensor1_${id}`).checked) sensors.push(1);
@@ -197,6 +205,14 @@
     },
     last_watered: null
     };
+
+    function cancelZone(id) {
+    const zoneDiv = document.getElementById(`zone_${id}`);
+    if (zoneDiv) {
+        zoneDiv.remove();
+    }
+    }
+
 
     zonesData.push(newZone);
     console.log("New zone added:", newZone);
@@ -237,6 +253,15 @@
             },
             body: `valve=${valve}`
         });
+    }
+
+    function addScheduledTime(id) {
+    const container = document.getElementById(`scheduled_times_container_${id}`);
+    const timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.className = 'scheduled-time';
+    container.appendChild(timeInput);
+    container.appendChild(document.createElement('br'));
     }
 
     window.onload = function() {
