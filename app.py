@@ -8,6 +8,9 @@ import atexit
 import json
 import os
 from datetime import datetime
+import eventlet
+eventlet.monkey_patch()
+
 
 # start flask and socketio
 app = Flask(__name__)
@@ -364,4 +367,4 @@ if __name__ == '__main__':
     start_controller_thread()
     start_led_thread()
     start_watchdog_thread()
-    socketio.run(app, host='0.0.0.0', allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=5000)

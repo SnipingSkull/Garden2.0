@@ -255,6 +255,8 @@
     }
 
     function updateZoneLastWatered(liveZones) {
+    if (!liveZones) return;  // 🚀 If zones are undefined, do nothing and exit
+
     liveZones.forEach((zone, index) => {
         const lastWateredDiv = document.getElementById(`last_watered_${index + 1}`);
         if (lastWateredDiv) {
@@ -267,6 +269,7 @@
         }
     });
     }
+
 
     function formatLastWatered(rawDate) {
         const date = new Date(rawDate);
