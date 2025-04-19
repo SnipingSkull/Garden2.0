@@ -206,20 +206,19 @@
     last_watered: null
     };
 
-    function cancelZone(id) {
-    const zoneDiv = document.getElementById(`zone_${id}`);
-    if (zoneDiv) {
-        zoneDiv.remove();
-    }
-    }
-
-
     zonesData.push(newZone);
     console.log("New zone added:", newZone);
 
     // Clear and re-render zones
     document.getElementById('zones').innerHTML = '';
     zonesData.forEach((zone, index) => createZoneElement(zone, index + 1));
+    }
+
+    function cancelZone(id) {
+        const zoneDiv = document.getElementById(`zone_${id}`);
+        if (zoneDiv) {
+            zoneDiv.remove();
+        }
     }
 
     function saveZones() {
